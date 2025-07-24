@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Blitz Schnaps Schach</title>
   <style>
     body {
@@ -71,41 +72,32 @@
     .controls {
       flex: 1 1 100%;
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 30px;
+      justify-content: center;
       gap: 1rem;
+      margin-top: 1.5rem;
     }
-    .big-btn {
-      font-size: 1.5rem;
-      padding: 1rem 3rem;
-      background: #ffc107;
+    .center-button {
+      display: flex;
+      justify-content: center;
+      margin: 1rem auto;
+      max-width: 300px;
+    }
+    .center-button button {
+      width: 100%;
+      font-size: 1.25rem;
+      padding: 0.75rem;
       border-radius: 999px;
-      color: black;
-      border: none;
-      cursor: pointer;
-    }
-    .big-btn:hover { background: #e0a800; }
-    .reset-btn {
-      background: transparent;
-      border: 1px solid white;
+      background: #555;
       color: white;
-      padding: 0.5rem 1.5rem;
-      border-radius: 8px;
+    }
+    .center-button button:hover {
+      background: #777;
     }
   </style>
 </head>
 <body>
   <h1>♟️ Blitz Schnaps Schach ♟️</h1>
   <div class="grid">
-    <div class="player" id="white">
-      <h2>♖ Weiß</h2>
-      <div class="time" id="timeWhite">5:00</div>
-      <button class="plus" onclick="useJoker('white', '1m-self')">+ 1 Minute</button>
-      <button class="minus" onclick="useJoker('white', '1m-opp')">– 1 Minute (Gegner ♜)</button>
-      <button class="plus" onclick="useJoker('white', '30s-self')">+ 30 Sekunden</button>
-      <button class="minus" onclick="useJoker('white', '30s-opp')">– 30 Sekunden (Gegner ♜)</button>
-    </div>
     <div class="player" id="black">
       <h2>♜ Schwarz</h2>
       <div class="time" id="timeBlack">5:00</div>
@@ -114,12 +106,28 @@
       <button class="plus" onclick="useJoker('black', '30s-self')">+ 30 Sekunden</button>
       <button class="minus" onclick="useJoker('black', '30s-opp')">– 30 Sekunden (Gegner ♖)</button>
     </div>
-    <div class="controls">
-      <button class="big-btn" onclick="switchTurn()">⎵ Uhr wechseln / Zug beenden</button>
-      <button class="reset-btn" onclick="startGame()">▶️ Spiel starten</button>
-      <button class="reset-btn" onclick="resetGame()">🔄 Reset</button>
+
+    <div class="player" id="white">
+      <h2>♖ Weiß</h2>
+      <div class="time" id="timeWhite">5:00</div>
+      <button class="plus" onclick="useJoker('white', '1m-self')">+ 1 Minute</button>
+      <button class="minus" onclick="useJoker('white', '1m-opp')">– 1 Minute (Gegner ♜)</button>
+      <button class="plus" onclick="useJoker('white', '30s-self')">+ 30 Sekunden</button>
+      <button class="minus" onclick="useJoker('white', '30s-opp')">– 30 Sekunden (Gegner ♜)</button>
     </div>
   </div>
+
+  <div class="center-button">
+    <button onclick="switchTurn()">Zugwechsel</button>
+  </div>
+
+  <div class="controls">
+    <button onclick="startGame()">▶️ Start</button>
+    <button onclick="resetGame()">🔄 Reset</button>
+  </div>
+
+  <audio id="moveSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+  <audio id="tickSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_0cc13f9e73.mp3?filename=clock-ticking-4-15773.mp3"></audio>
 
   <script>
     let timeWhite = 300;
@@ -128,8 +136,10 @@
     let interval = null;
     let gameRunning = false;
     const increment = 10;
-    const minOpponentTime = 10;
     const jokerUsage = { white: [], black: [] };
+
+    const tickAudio = document.getElementById("tickSound");
+    tickAudio.volume = 0.2;
 
     function formatTime(sec) {
       const m = Math.floor(sec / 60);
@@ -142,6 +152,19 @@
       document.getElementById('timeBlack').textContent = formatTime(timeBlack);
     }
 
+    function playTick() {
+      if (!gameRunning) return;
+      let time = activePlayer === 'white' ? timeWhite : timeBlack;
+      if (time <= 0) return;
+      if (time < 60) {
+        tickAudio.volume = time < 15 ? 0.6 : time < 30 ? 0.4 : 0.25;
+      } else {
+        tickAudio.volume = 0.2;
+      }
+      tickAudio.currentTime = 0;
+      tickAudio.play();
+    }
+
     function tick() {
       if (!gameRunning) return;
       if (activePlayer === 'white') {
@@ -150,6 +173,7 @@
         timeBlack = Math.max(0, timeBlack - 1);
       }
       updateDisplay();
+      playTick();
     }
 
     function startGame() {
@@ -161,6 +185,8 @@
 
     function switchTurn() {
       if (!gameRunning) return;
+      const moveSound = document.getElementById("moveSound");
+      moveSound.play();
       if (activePlayer === 'white') {
         timeWhite += increment;
         activePlayer = 'black';
@@ -205,7 +231,7 @@
         else timeBlack += amount;
       } else {
         const oppTime = opp === 'white' ? timeWhite : timeBlack;
-        if (oppTime < minOpponentTime + amount) return;
+        if (oppTime < 10 + amount) return;
         if (opp === 'white') timeWhite -= amount;
         else timeBlack -= amount;
       }
@@ -214,7 +240,7 @@
         ? ['1m-self', '1m-opp']
         : ['30s-self', '30s-opp'];
       groupTypes.forEach(t => {
-        const btn = document.querySelector(`button[onclick=\"useJoker('${player}', '${t}')\"]`);
+        const btn = document.querySelector(`button[onclick="useJoker('${player}', '${t}')"]`);
         if (btn) btn.disabled = true;
       });
 
