@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Blitz Schnaps Schach</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom, #111, #222);
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      letter-spacing: 2px;
+    }
+    .grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      max-width: 1000px;
+      margin: auto;
+    }
+    .player {
+      flex: 1 1 45%;
+      min-width: 300px;
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+    }
+    #white {
+      background: #fff;
+      color: #000;
+      order: 2;
+    }
+    #black {
+      background: #333;
+      color: #fff;
+      order: 1;
+    }
+    @media (min-width: 768px) {
+      #white { order: 1; }
+      #black { order: 2; }
+    }
+    .time {
+      font-size: 3rem;
+      margin: 1rem 0;
+      font-variant-numeric: tabular-nums;
+    }
+    button {
+      font-size: 1rem;
+      padding: 10px;
+      margin: 5px 0;
+      width: 100%;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .plus { background: #28a745; color: white; }
+    .plus:hover { background: #218838; }
+    .minus { background: #dc3545; color: white; }
+    .minus:hover { background: #c82333; }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .controls {
+      flex: 1 1 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 30px;
+      gap: 1rem;
+    }
+    .big-btn {
+      font-size: 1.5rem;
+      padding: 1rem 3rem;
+      background: #ffc107;
+      border-radius: 999px;
+      color: black;
+      border: none;
+      cursor: pointer;
+    }
+    .big-btn:hover { background: #e0a800; }
+    .reset-btn {
+      background: transparent;
+      border: 1px solid white;
+      color: white;
+      padding: 0.5rem 1.5rem;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>♟️ Blitz Schnaps Schach ♟️</h1>
+  <div class="grid">
+    <div class="player" id="white">
+      <h2>♖ Weiß</h2>
+      <div class="time" id="timeWhite">5:00</div>
+      <button class="plus" onclick="useJoker('white', '1m-self')">+ 1 Minute</button>
+      <button class="minus" onclick="useJoker('white', '1m-opp')">– 1 Minute (Gegner ♜)</button>
+      <button class="plus" onclick="useJoker('white', '30s-self')">+ 30 Sekunden</button>
+      <button class="minus" onclick="useJoker('white', '30s-opp')">– 30 Sekunden (Gegner ♜)</button>
+    </div>
+    <div class="player" id="black">
+      <h2>♜ Schwarz</h2>
+      <div class="time" id="timeBlack">5:00</div>
+      <button class="plus" onclick="useJoker('black', '1m-self')">+ 1 Minute</button>
+      <button class="minus" onclick="useJoker('black', '1m-opp')">– 1 Minute (Gegner ♖)</button>
+      <button class="plus" onclick="useJoker('black', '30s-self')">+ 30 Sekunden</button>
+      <button class="minus" onclick="useJoker('black', '30s-opp')">– 30 Sekunden (Gegner ♖)</button>
+    </div>
+    <div class="controls">
+      <button class="big-btn" onclick="switchTurn()">⎵ Uhr wechseln / Zug beenden</button>
+      <button class="reset-btn" onclick="startGame()">▶️ Spiel starten</button>
+      <button class="reset-btn" onclick="resetGame()">🔄 Reset</button>
+    </div>
+  </div>
+
+  <script>
+    let timeWhite = 300;
+    let timeBlack = 300;
+    let activePlayer = null;
+    let interval = null;
+    let gameRunning = false;
+    const increment = 10;
+    const minOpponentTime = 10;
+    const jokerUsage = { white: [], black: [] };
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function updateDisplay() {
+      document.getElementById('timeWhite').textContent = formatTime(timeWhite);
+      document.getElementById('timeBlack').textContent = formatTime(timeBlack);
+    }
+
+    function tick() {
+      if (!gameRunning) return;
+      if (activePlayer === 'white') {
+        timeWhite = Math.max(0, timeWhite - 1);
+      } else {
+        timeBlack = Math.max(0, timeBlack - 1);
+      }
+      updateDisplay();
+    }
+
+    function startGame() {
+      if (gameRunning) return;
+      activePlayer = 'white';
+      gameRunning = true;
+      interval = setInterval(tick, 1000);
+    }
+
+    function switchTurn() {
+      if (!gameRunning) return;
+      if (activePlayer === 'white') {
+        timeWhite += increment;
+        activePlayer = 'black';
+      } else {
+        timeBlack += increment;
+        activePlayer = 'white';
+      }
+      updateDisplay();
+    }
+
+    function resetGame() {
+      clearInterval(interval);
+      timeWhite = 300;
+      timeBlack = 300;
+      activePlayer = null;
+      gameRunning = false;
+      jokerUsage.white = [];
+      jokerUsage.black = [];
+      updateDisplay();
+      const buttons = document.querySelectorAll('button');
+      buttons.forEach(btn => btn.disabled = false);
+    }
+
+    function useJoker(player, type) {
+      const usage = jokerUsage[player];
+      if (usage.includes(type)) return;
+
+      const typeGroup = type.startsWith('1m') ? '1m' : '30s';
+      const groupUsed = usage.some(t => t.startsWith(typeGroup));
+      if (groupUsed && !usage.includes(type)) return;
+
+      usage.push(type);
+      jokerUsage[player] = usage;
+      document.querySelector(`button[onclick="useJoker('${player}', '${type}')"]`).disabled = true;
+
+      const amount = type.startsWith('1m') ? 60 : 30;
+      const self = player;
+      const opp = player === 'white' ? 'black' : 'white';
+
+      if (type.endsWith('self')) {
+        if (self === 'white') timeWhite += amount;
+        else timeBlack += amount;
+      } else {
+        const oppTime = opp === 'white' ? timeWhite : timeBlack;
+        if (oppTime < minOpponentTime + amount) return;
+        if (opp === 'white') timeWhite -= amount;
+        else timeBlack -= amount;
+      }
+
+      const groupTypes = typeGroup === '1m'
+        ? ['1m-self', '1m-opp']
+        : ['30s-self', '30s-opp'];
+      groupTypes.forEach(t => {
+        const btn = document.querySelector(`button[onclick=\"useJoker('${player}', '${t}')\"]`);
+        if (btn) btn.disabled = true;
+      });
+
+      updateDisplay();
+    }
+
+    updateDisplay();
+  </script>
+</body>
+</html>
